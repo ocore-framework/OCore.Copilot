@@ -1,0 +1,6 @@
+You need to help me communicate to the backend developers what this system should include.
+
+The backend will be hosted on a server and will handle all relevant tasks related to the business case.
+
+This description should take into account the previously discussed actors and concepts, but it should be
+phrased in a way that a developer understands it and can continue breaking it down into smaller pieces.
