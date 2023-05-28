@@ -2,6 +2,7 @@
 using OCore.Copilot.Core;
 using System.Diagnostics;
 using OpenAI_API.Chat;
+using System.Drawing;
 
 var configFile = File.ReadAllLines("openapi.txtconfig");
 
@@ -17,7 +18,7 @@ if (apiKey == null)
 AnsiConsole.Write(
     new FigletText("OCore Copilot")
         .Centered()
-        .Color(Color.Fuchsia));
+        .Color(Spectre.Console.Color.Fuchsia));
 AnsiConsole.WriteLine();
 
 const string newBusinessCase = "New business case";
@@ -161,11 +162,13 @@ string GetInstructions(string instructionName)
     return instructions;
 }
 
-static async Task CreateBusinessCase(Conversation businessPerson, string interpolatedBusinessCaseInstructions)
+async Task CreateBusinessCase(Conversation businessPerson, string interpolatedBusinessCaseInstructions)
 {
     var happyWithBusinessCase = false;
     Service.AddSystemMessage(businessPerson, interpolatedBusinessCaseInstructions);
     Service.AddInput(businessPerson, "I want you to help elaborate on the business case and give me an elevator pitch.");
+
+    AnsiConsole.Markup($"[{businessPersonColor}]<BusinessPerson>[/]: ");
 
     await foreach (var segment in Service.GetStream(businessPerson))
     {
