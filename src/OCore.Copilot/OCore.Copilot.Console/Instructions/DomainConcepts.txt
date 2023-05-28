@@ -1,0 +1,10 @@
+I want you to help me identify and specify core domain concepts. These concepts should be high level and abstract, 
+but something suitable to hand off to a system developer working in a high level object-oriented language.
+
+I want you to list these with as bulletpoints starting each line with a "-", then follow that with a domain concept 
+in Pascal Case, followed by a colon ":" and a human readable description. You are free to give an indication about 
+the arity of the concept in a way that a developer understands.
+
+If should be possible from your output for a developer to break this down further into a real system description
+in, say, C#, F# or Java, or any other high level systems language. Your output should not refer to programming languages,
+keep it high level.

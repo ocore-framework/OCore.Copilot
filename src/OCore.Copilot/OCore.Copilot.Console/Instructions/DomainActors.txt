@@ -1,0 +1,8 @@
+I want you to help me identify and specify core actors in this system. List these on a single line each starting with the "-"-character.
+
+Each line should start with a computer-friendly name for the actor in Pascal Case, for example "CustomerProfile". 
+After the name, add a colon ":" followed by a description of the actor. T
+
+These actors should be external forces but not only humans, also system components. Indicate in the description if it is an external human actor.
+
+The line should end with an arity for the actor, indicating how many of the actors should be expected in the given system. Valid values for this are "1" (single), "N" (many) and spreads "1..N". This should be presented in a parenthesis.

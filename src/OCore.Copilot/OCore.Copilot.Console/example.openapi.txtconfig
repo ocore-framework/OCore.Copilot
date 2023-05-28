@@ -1,0 +1,5 @@
+ApiKey: [INSERT API KEY]
+Organization: [INSERT ORGANIZATION]
+
+Rename this file to "openapi.txtconfig" and configure it to 
+be copied if newer in the file properties if running from Visual Studio.

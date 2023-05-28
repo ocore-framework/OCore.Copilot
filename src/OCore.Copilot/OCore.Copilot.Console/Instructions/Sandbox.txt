@@ -1,0 +1,7 @@
+# Domain actors
+
+Example:
+
+- SmsSendingSystem: A system for handling customer (N)
+- InventoryStore: The registry for inventory (1)
+- Customer: A human customer interacting with the system (1..N)
