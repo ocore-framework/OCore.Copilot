@@ -2,7 +2,6 @@
 using OCore.Copilot.Core;
 using System.Diagnostics;
 using OpenAI_API.Chat;
-using System.Drawing;
 
 var configFile = File.ReadAllLines("openapi.txtconfig");
 
@@ -27,10 +26,12 @@ const string iterateOnRepo = "Iterate on existing repo";
 var operationSelected = false;
 var programmingLanguage = "CSharp";
 
-Conversation businessPerson = null;
+Conversation? businessPerson = null;
 string businessPersonColor = "yellow";
-Conversation coder = null;
-string coderColor = "gold1";
+Conversation? teamLead = null;
+string teamLeadColor = "gold1";
+Conversation? seniorDeveloper = null;
+string seniorDeveloperColor = "aquamarine3";
 
 Service.SetupApi(apiKey);
 
@@ -119,30 +120,47 @@ async Task NewBusinessCase()
 
     AnsiConsole.MarkupLine("[green]Let's talk to our business person![/]");
 
-    await CreateBusinessCase(businessPerson, interpolatedBusinessCaseInstructions);
+    Service.AddSystemMessage(businessPerson, interpolatedBusinessCaseInstructions);
+    
+    var businessCase = await CreateBusinessCase(businessPerson, "I want you to help elaborate on the business case and give me an elevator pitch.");
 
     var domainActorInstructions = GetInstructions("DomainActors");
 
     AnsiConsole.MarkupLine("Great! Let's indentify some [green]domain actors[/]");
     var interpolatedDomainActorInstructions = Interpolate(domainActorInstructions, null);
-    await IdentifyActors(businessPerson, interpolatedDomainActorInstructions);
+    var actors = await IdentifyActors(businessPerson, interpolatedDomainActorInstructions);
 
     var domainConceptInstructions = GetInstructions("DomainConcepts");
     AnsiConsole.MarkupLine("Great! Let's indentify some [green]domain concepts[/]");
     var interpolatedDomainConceptInstructions = Interpolate(domainConceptInstructions, null);
-    await IdentifyConcepts(businessPerson, interpolatedDomainConceptInstructions);
+    var concepts = await IdentifyConcepts(businessPerson, interpolatedDomainConceptInstructions);
 
     var systemDescriptionInstructions = GetInstructions("SystemDescription");
     AnsiConsole.MarkupLine("Great! Let's try to [green]describe the system[/] in a developer friendly way");
     var interpolatedSystemDescriptionInstructions = Interpolate(systemDescriptionInstructions, null);
-    await IdentifySystemDescription(businessPerson, interpolatedSystemDescriptionInstructions);
+    var systemDescription = await IdentifySystemDescription(businessPerson, interpolatedSystemDescriptionInstructions);
 
     var useCasesInstructions = GetInstructions("UseCases");
     AnsiConsole.MarkupLine("Great! Let's try to [green]describe some use-cases[/] so we can get started on development");
     var interpolatedUseCasesInstructions = Interpolate(useCasesInstructions, null);
-    await IdentifyUseCases(businessPerson, interpolatedUseCasesInstructions);
+    var useCases = await IdentifyUseCases(businessPerson, interpolatedUseCasesInstructions);
 
     AnsiConsole.MarkupLine("[green]Let's get some developers into the process![/]");
+
+    teamLead = Service.CreateConversation();
+    var teamLeadInstructions = GetInstructions("TeamLead");
+    var interpolatedTeamLeadInstructions = Interpolate(teamLeadInstructions, null);
+    
+    Service.AddSystemMessage(teamLead, interpolatedTeamLeadInstructions);
+    Service.AddSystemMessage(teamLead, $"The business case is: {businessCase}");
+    Service.AddSystemMessage(teamLead, $"The domain actors are: {actors}");
+    Service.AddSystemMessage(teamLead, $"The domain concepts are: {concepts}");
+    Service.AddSystemMessage(teamLead, $"The system description is: {systemDescription}");
+    Service.AddSystemMessage(teamLead, $"The use cases are: {useCases}");
+    
+    await GetInitialTeamLeadReaction(teamLead, "Can you give me your initial reactions on this?");
+
+    
 }
 
 string Interpolate(string businessCaseInstructions, params (string,string)[]? substitutes)
@@ -157,50 +175,16 @@ string Interpolate(string businessCaseInstructions, params (string,string)[]? su
 
 string GetInstructions(string instructionName)
 {
+#if false
     var instructionLines = File.ReadAllLines(Path.Combine("Instructions", $"{instructionName}.txt"));
     var instructions = string.Join(' ', instructionLines);
+#endif
+    var instructions = File.ReadAllText(Path.Combine("Instructions", $"{instructionName}.txt"));
     return instructions;
 }
 
-async Task CreateBusinessCase(Conversation businessPerson, string interpolatedBusinessCaseInstructions)
-{
-    var happyWithBusinessCase = false;
-    Service.AddSystemMessage(businessPerson, interpolatedBusinessCaseInstructions);
-    Service.AddInput(businessPerson, "I want you to help elaborate on the business case and give me an elevator pitch.");
 
-    AnsiConsole.Markup($"[{businessPersonColor}]<BusinessPerson>[/]: ");
-
-    await foreach (var segment in Service.GetStream(businessPerson))
-    {
-        if (segment != null)
-        {
-            AnsiConsole.Markup($"[yellow]{segment}[/]");
-        }
-    }
-    AnsiConsole.WriteLine();
-
-    happyWithBusinessCase = AnsiConsole.Confirm("Are you happy with this description of the business case?");
-
-    while (happyWithBusinessCase == false)
-    {
-        var elaboration = AnsiConsole.Ask<string>("Please elaborate (end with empty line): ");
-        if (elaboration != null)
-        {
-            Service.AddInput(businessPerson, elaboration);
-            await foreach (var segment in Service.GetStream(businessPerson))
-            {
-                if (segment != null)
-                {
-                    AnsiConsole.Markup($"[yellow]{segment}[/]");
-                }
-            }
-            AnsiConsole.WriteLine();
-        }
-        else break;
-    }    
-}
-
-static async Task Iteration(Conversation conversation,
+static async Task<string> Iteration(Conversation conversation,
     string initialPrompt,
     string actorName, 
     string color,
@@ -209,15 +193,17 @@ static async Task Iteration(Conversation conversation,
 {
     var happy = false;
     Service.AddInput(conversation, initialPrompt);
-
+    string returnString = string.Empty;
+    
     do
     {
-        AnsiConsole.Markup($"[{color}]<{actorName}>[/]: ");
+        AnsiConsole.Markup($"[{color}]<{actorName}>:[/] ");
         await foreach (var segment in Service.GetStream(conversation))
         {
             if (segment != null)
             {
                 AnsiConsole.Markup($"[{color}]{segment}[/]");
+                returnString += segment;
             }
         }
         AnsiConsole.WriteLine();
@@ -234,24 +220,37 @@ static async Task Iteration(Conversation conversation,
             Service.AddInput(conversation, prompt);
         }
     } while (happy == false);
+
+    return returnString;
 }
 
-async Task IdentifyActors(Conversation businessPerson, string interpolatedDomainActors)
+
+async Task<string>  GetInitialTeamLeadReaction(Conversation conversation, string query)
 {
-    await Iteration(businessPerson, interpolatedDomainActors, "BusinessPerson", businessPersonColor, "Are you happy with the identified actors?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
+    return await Iteration(conversation, query, "Team Lead", teamLeadColor);
 }
 
-async Task IdentifyConcepts(Conversation businessPerson, string interpolatedDomainConcepts)
+async Task<string> CreateBusinessCase(Conversation businessPerson, string interpolatedBusinessCaseInstructions)
 {
-    await Iteration(businessPerson, interpolatedDomainConcepts, "BusinessPerson", businessPersonColor, "Are you happy with the identified concepts?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
+    return await Iteration(businessPerson, interpolatedBusinessCaseInstructions, "BusinessPerson", businessPersonColor, "Are you happy with the business case description?");
 }
 
-async Task IdentifySystemDescription(Conversation businessPerson, string interpolatedSystemDescription)
+async Task<string> IdentifyActors(Conversation businessPerson, string interpolatedDomainActors)
 {
-    await Iteration(businessPerson, interpolatedSystemDescription, "BusinessPerson", businessPersonColor, "Are you happy with the proposed system description?");
+    return await Iteration(businessPerson, interpolatedDomainActors, "BusinessPerson", businessPersonColor, "Are you happy with the identified actors?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
 }
 
-async Task IdentifyUseCases(Conversation businessPerson, string interpolatedUseCases)
+async Task<string> IdentifyConcepts(Conversation businessPerson, string interpolatedDomainConcepts)
 {
-    await Iteration(businessPerson, interpolatedUseCases, "BusinessPerson", businessPersonColor, "Are you happy with these usecases?");
+    return await Iteration(businessPerson, interpolatedDomainConcepts, "BusinessPerson", businessPersonColor, "Are you happy with the identified concepts?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
+}
+
+async Task<string> IdentifySystemDescription(Conversation businessPerson, string interpolatedSystemDescription)
+{
+    return await Iteration(businessPerson, interpolatedSystemDescription, "BusinessPerson", businessPersonColor, "Are you happy with the proposed system description?");
+}
+
+async Task<string> IdentifyUseCases(Conversation businessPerson, string interpolatedUseCases)
+{
+    return await Iteration(businessPerson, interpolatedUseCases, "BusinessPerson", businessPersonColor, "Are you happy with these usecases?");
 }
