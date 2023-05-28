@@ -3,8 +3,12 @@ but something suitable to hand off to a system developer working in a high level
 
 I want you to list these with as bulletpoints starting each line with a "-", then follow that with a domain concept 
 in Pascal Case, followed by a colon ":" and a human readable description. You are free to give an indication about 
-the arity of the concept in a way that a developer understands.
+the arity of the concept in a way that a developer understands. 
+
+Indicate which actors will use or be affected by the concepts. Also, at the end of the bullet point, list which concepts 
+the current concept is related to. 
 
 If should be possible from your output for a developer to break this down further into a real system description
 in, say, C#, F# or Java, or any other high level systems language. Your output should not refer to programming languages,
-keep it high level.
+keep it high level, however it is great if the way these are presented lean themselves towards being able to be modelled 
+in a high level language as described.

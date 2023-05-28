@@ -110,7 +110,7 @@ async Task NewBusinessCase()
 
     businessPerson = Service.CreateConversation();
 
-    AnsiConsole.MarkupLine("Let's talk to our business person!");
+    AnsiConsole.MarkupLine("[green]Let's talk to our business person![/]");
 
     await CreateBusinessCase(businessPerson, interpolatedBusinessCaseInstructions);
 
@@ -119,6 +119,11 @@ async Task NewBusinessCase()
     AnsiConsole.MarkupLine("Great! Let's indentify some [green]domain actors[/]");
     var interpolatedDomainActorInstructions = Interpolate(domainActorInstructions, null);
     await IdentifyActors(businessPerson, interpolatedDomainActorInstructions);
+
+    var domainConceptInstructions = GetInstructions("DomainConcepts");
+    AnsiConsole.MarkupLine("Great! Let's indentify some [green]domain concepts[/]");
+    var interpolatedDomainConceptInstructions = Interpolate(domainActorInstructions, null);
+    await IdentifyActors(businessPerson, interpolatedDomainConceptInstructions);
 }
 
 string Interpolate(string businessCaseInstructions, params (string,string)[]? substitutes)
@@ -147,7 +152,7 @@ static async Task CreateBusinessCase(Conversation businessPerson, string interpo
     {
         if (segment != null)
         {
-            AnsiConsole.Write(segment);
+            AnsiConsole.Markup($"[yellow]{segment}[/]");
         }
     }
     AnsiConsole.WriteLine();
@@ -164,7 +169,7 @@ static async Task CreateBusinessCase(Conversation businessPerson, string interpo
             {
                 if (segment != null)
                 {
-                    AnsiConsole.Write(segment);
+                    AnsiConsole.Markup($"[yellow]{segment}[/]");
                 }
             }
             AnsiConsole.WriteLine();
@@ -173,14 +178,17 @@ static async Task CreateBusinessCase(Conversation businessPerson, string interpo
     }    
 }
 
-static async Task IdentifyActors(Conversation businessPerson, string interpolatedDomainActors)
+static async Task Iteration(Conversation conversation, 
+    string initialPrompt, 
+    string? happyQuestion = null,
+    string? reminder = null)
 {
-    var happyWithActors = false;    
-    Service.AddInput(businessPerson, interpolatedDomainActors);
+    var happy = false;
+    Service.AddInput(conversation, initialPrompt);
 
     do
     {
-        await foreach (var segment in Service.GetStream(businessPerson))
+        await foreach (var segment in Service.GetStream(conversation))
         {
             if (segment != null)
             {
@@ -189,14 +197,25 @@ static async Task IdentifyActors(Conversation businessPerson, string interpolate
         }
         AnsiConsole.WriteLine();
 
-        var prompt = AnsiConsole.Ask<string>("Are you happy with this description of the actors in the system?");
-        if (string.IsNullOrEmpty(prompt))
+        happy = AnsiConsole.Confirm(happyQuestion ?? "Are you happy with this description?");
+        if (happy == false)
         {
-            happyWithActors = true;
-        } else
-        {
-            Service.AddInput(businessPerson, prompt);
-            Service.AddInput(businessPerson, "Remember to only output these in the previously described format");
+            var prompt = AnsiConsole.Ask<string>("Please elaborate: ");
+            Service.AddInput(conversation, prompt);
+            if (reminder != null)
+            {
+                Service.AddInput(conversation, reminder);
+            }
         }
-    } while (happyWithActors == false);
+    } while (happy == false);
+}
+
+static async Task IdentifyActors(Conversation businessPerson, string interpolatedDomainActors)
+{
+    await Iteration(businessPerson, interpolatedDomainActors, "Are you happy with the identified actors?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
+}
+
+static async Task IdentifyConcepts(Conversation businessPerson, string interpolatedDomainConcepts)
+{
+    await Iteration(businessPerson, interpolatedDomainActors, "Are you happy with the identified concepts?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
 }
