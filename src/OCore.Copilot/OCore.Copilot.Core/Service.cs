@@ -35,6 +35,10 @@ namespace OCore.Copilot.Core
         public static Conversation CreateConversation()
         {
             CheckInit();
+            //return api!.Chat.CreateConversation(new ChatRequest
+            //{
+            //    Model = "gpt-4"
+            //});
             return api!.Chat.CreateConversation();
         }
 

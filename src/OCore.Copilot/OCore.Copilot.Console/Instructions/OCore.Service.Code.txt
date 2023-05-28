@@ -1,0 +1,39 @@
+Services in OCore as defined as follows using C#:
+
+```csharp
+using OCore.Services;
+
+namespace {Title}.Services; // Always prefer declaring a namespace like this!! 
+
+[Service("ServiceName")]
+public interface IServiceName : IService
+{
+	Task<T> Operation(string parameter1, int parameter2);
+}
+
+// Add public XML-comment here
+public class ServiceName : Service, IServiceName
+{
+	// Add public XML-comment here
+	public async Task<T> Operation(string parameter1, int parameter2) 
+	{
+		// Implement method as expected from description
+	}
+}
+
+```
+
+Parameters and operation-names are just examples, these need to follow
+the requirements.
+
+Ids should default to being strings, not Guids. But they can be Guids stored as strings.
+
+Services should by default not store data, they should get it from DataEntities.
+
+If you need to talk to other services, inject the IOtherService-interface with constructor injection.
+
+Remember to add the [Service("ServiceName")] over the interfaces that implement `IService`! THIS IS IMPORTANT!
+
+Always add XML-comments to public interfaces and methods!
+
+Always prefer `namespace NamespaceName;` over opening brackets and indentation!

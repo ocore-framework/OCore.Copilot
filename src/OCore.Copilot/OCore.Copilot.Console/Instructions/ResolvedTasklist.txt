@@ -1,0 +1,5 @@
+The stakeholder has tried to resolve some uncertainties. The answer is here:
+
+{ResolvedUncertainties}
+
+Given these answers, can you repeat all the tasks with this additional information?

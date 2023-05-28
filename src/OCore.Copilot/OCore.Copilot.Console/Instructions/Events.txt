@@ -1,0 +1,8 @@
+Given the presented tasks, provide a list of events the system
+should emit. These events should be named in the past tense; `SomethingHappened`.
+
+It is better that you create too many events than too few. Anything you think
+the system should be alerted about should be added.
+
+Itemize the Events starting with "-" and an event name in PascalCase, followed by a colon ":" 
+and a description of the Event.

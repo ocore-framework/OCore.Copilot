@@ -1,0 +1,7 @@
+Given these tasks and your knowledge of the system, list all Services that should be implemented.
+Do not suggest a Service if the same problem is better handled by a DataEntity.
+
+Itemize the Services starting with "-" and an event name in PascalCase, followed by a colon ":" 
+and a description of the Service. Also itemize suitable operations that should be made on the Service with parameters
+and returnvalue. Parameters and return values should be valid .NET types, including complex types like classes and
+records.

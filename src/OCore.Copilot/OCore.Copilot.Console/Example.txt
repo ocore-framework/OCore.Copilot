@@ -1,3 +1,3 @@
 POS
 
-Point-of-sale system with a cash registry and a loyalty programme for customers who are able to sign up through some means. Includes rebates and punch cards, etc. Also possible for merchants to access system to setup special sales and rules. The system should support multiple merchants and merchants should have multiple cash registries.
+Point-of-sale system with a cash registry and a loyalty programme for customers who are able to sign up through some means. Includes rebates and punch cards, etc. Also possible for merchants to access system to setup special sales and rules. The system should support multiple merchants and merchants should have multiple cash registries. Each merchant should be able to have their own loyalty program, so there are multiple of them. The customer should not have a reward account, the reward should be automatically applied at the time of purchase in the cash registry and terminal.

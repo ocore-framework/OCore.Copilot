@@ -2,3 +2,7 @@ For the developer to better understand how to implement this system, we need
 to break it up into use-cases. Given the previously defined concepts, actors and 
 system description, provide me with 3 concrete use-cases that can be used
 to show how the system should work.
+
+For each use-case, list actors, related concepts. Itemize the steps in the use-case.
+
+Keep it terse.

@@ -1,0 +1,9 @@
+Given these tasks, please do your best to answer and resolve the uncertainties in this task list.
+
+{TaskList}
+
+Come back with a numbered list of answers to the uncertainties. It is OK if you cannot fully answer
+the uncertainties, just do your best knowing what you know about the system. Also, ask questions
+that might help you fully answer any uncertainties.
+
+Do not add more questions, only answers!

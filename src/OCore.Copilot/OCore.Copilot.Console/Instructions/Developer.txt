@@ -7,12 +7,18 @@ The OCore framework uses three main concepts:
   of their own. For example, a service that sends emails, or a service that
   generates PDFs. Services can be looked at as singletons and are always available. 
   The functionality of a Service is described in a dotnet interface that implements
-  IService. All methods must be `async` and return a Task.
+  IService. All methods must be `async` and return a Task. Services automatically
+  implement their own internal and external APIs.
   
-- Data Entities: An OCore DataEntity has an identity and carries data. It is
+- DataEntities: An OCore DataEntity has an identity and carries data. It is
   persisted in a data store. Data Entities are described in a dotnet interface
   that implements IDataEntity. All properties must be `async` and return a Task.
+  DataEntities automatically implement their own internal and external APIs with
+  full CRUD functionality.
   
 - Events: An OCore Event is a message that is sent using the EventAggregator. 
   Events are named in the past tense. For example, `UserCreated` or `UserUpdated`.
 
+OCore makes communicating with the database directly often unncessesary, persistence
+is fixed by the platform. OCore also solves authentication and authorization internally
+in the cluster.

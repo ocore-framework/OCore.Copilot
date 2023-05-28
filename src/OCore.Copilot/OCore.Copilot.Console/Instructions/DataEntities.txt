@@ -1,0 +1,7 @@
+Given these tasks and your knowledge of the system, list all DataEntities that should be implemented.
+DataEntities have an identity, like an ItemId, CustomerId or TransactionId, and they often have associated data.
+They support CRUD out of the box.
+
+Itemize the DataEntities starting with "-" and an event name in PascalCase, followed by a colon ":" 
+and a description of the Service. Also itemize custom operations that should be able to be done on the DataEntity
+with parameters and returnvalue.

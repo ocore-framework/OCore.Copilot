@@ -1,0 +1,11 @@
+OCore DataEntities are used for storing state and operations with entites
+that have an identity.
+
+DataEntity ID's are always strings.
+
+The code for a `DataEntity` is as follows:
+
+```csharp
+
+
+```
