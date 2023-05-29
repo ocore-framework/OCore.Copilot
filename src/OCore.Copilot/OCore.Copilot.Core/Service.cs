@@ -5,7 +5,7 @@ namespace OCore.Copilot.Core
 {
     public static class Service
     {
-        private static OpenAIAPI? api;        
+        private static OpenAIAPI? api;
 
         public static void CheckInit()
         {
@@ -28,18 +28,22 @@ namespace OCore.Copilot.Core
             }
             else
             {
-                api = new OpenAIAPI(new APIAuthentication(apiKey, organization));                 
+                api = new OpenAIAPI(new APIAuthentication(apiKey, organization));
             }
         }
 
-        public static Conversation CreateConversation()
+        public static Conversation CreateConversation(string? model = null)
         {
             CheckInit();
             //return api!.Chat.CreateConversation(new ChatRequest
             //{
             //    Model = "gpt-4"
             //});
-            return api!.Chat.CreateConversation();
+            if (model == null)
+            {
+                return api!.Chat.CreateConversation();
+            }
+            else throw new Exception("Currently, only the default model is supported");
         }
 
         public static void AddSystemMessage(Conversation conversation, string message)

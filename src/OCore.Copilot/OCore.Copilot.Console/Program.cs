@@ -26,12 +26,9 @@ string? description = null;
 
 Service.SetupApi(apiKey);
 
-Conversation stakeholder = Service.CreateConversation();
-const string stakeholderColor = "yellow";
-Conversation teamLead = Service.CreateConversation();
-const string teamLeadColor = "gold1";
-Conversation seniorDeveloper = Service.CreateConversation();
-const string seniorDeveloperColor = "aquamarine3";
+var stakeholder = new Persona(Service.CreateConversation(), "Stakeholder", Color.Yellow);
+var teamLead = new Persona(Service.CreateConversation(), "Team Lead", Color.Gold1);
+var developer = new Persona(Service.CreateConversation(), "Developer", Color.Aquamarine3);
 
 // Workflow
 var workflow = new List<string>
@@ -61,7 +58,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         new ConceptRequest(
             "Business Case",
             "[green]Let's talk to our business person![/]",
-            stakeholder, "Stakeholder", stakeholderColor,
+            stakeholder,
             new List<string> {"BusinessCase" },
             null,
             "I want you to help elaborate on the business case and give me an elevator pitch.") },
@@ -69,7 +66,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "Domain Actors",
         new ConceptRequest("Domain Actors",
             "Great! Let's indentify some [green]domain actors[/]",
-            stakeholder, "Stakeholder", stakeholderColor,
+            stakeholder,
             new List<string> { "DomainActors" }          
         )
     },
@@ -77,7 +74,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "Domain Concepts",
         new ConceptRequest("Domain Concepts",
             "Great! Let's indentify some [green]domain concepts[/]",
-            stakeholder, "Stakeholder", stakeholderColor,
+            stakeholder,
             new List<string> { "DomainConcepts" }            
         )
     },
@@ -85,7 +82,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "System Description",
         new ConceptRequest("System Description",
             "Great! Let's try to describe the system [green]in a developer friendly way[/]",
-            stakeholder, "Stakeholder", stakeholderColor,
+            stakeholder,
             new List<string> { "SystemDescription" }            
         )
     },        
@@ -93,7 +90,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "UseCases",
         new ConceptRequest("UseCases",
             "Great! Let's try to [green]describe some use-cases[/] so we can get started on development",
-            stakeholder, "Stakeholder", stakeholderColor,
+            stakeholder,
             new List<string> { "UseCases" }      
         )
     }, 
@@ -101,7 +98,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "TeamLead Reaction",
         new ConceptRequest("TeamLead Reaction",
             "[green]Let's get the team lead involved in the process![/]",
-            teamLead, "Team Lead", teamLeadColor,
+            teamLead,
             new List<string> { "Developer", "TeamLead" },
             new List<string> { "Business Case", "Domain Actors", "Domain Concepts", "System Description", "UseCases" }
         )
@@ -110,7 +107,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "Task List",
         new ConceptRequest("Task List",
             "[green]Create some concrete tasks that a developer can get started on.[/]",
-            teamLead, "Team Lead", teamLeadColor,
+            teamLead,
             new List<string> { "TaskCreation" }            
         )
     }, 
@@ -118,7 +115,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "Events",
         new ConceptRequest("Events",
             "[green]Can you identify events in the system?[/]",
-            teamLead, "Team Lead", teamLeadColor,
+            teamLead,
             new List<string> { "Events" },
             Prompt: "Identify the Events in the system"
         )
@@ -127,7 +124,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "Services",
         new ConceptRequest("Services",
             "[green]Can you identify services in the system?[/]",
-            teamLead, "Team Lead", teamLeadColor,
+            teamLead,
             new List<string> { "Services" },
             Prompt: "Identify the Services in the system"
         )
@@ -136,7 +133,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "DataEntities",
         new ConceptRequest("DataEntities",
             "[green]Can you identify data entities in the system?[/]",
-            teamLead, "Team Lead", teamLeadColor,
+            teamLead,
             new List<string> { "DataEntities" },
             Prompt: "Identify the DataEntities in the system"
         )
@@ -145,7 +142,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "Developer Reactions",
         new ConceptRequest("Developer Reactions",
             "[green]Let's talk to some developers![/]",
-            seniorDeveloper, "Senior Developer", seniorDeveloperColor,
+            developer,
             new List<string> { 
                 "Developer", 
                 "OCore.Communication", 
@@ -170,7 +167,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         "Service Implementation",
         new ConceptRequest("Service Implementation",
             "[green]Let's try to implement some of the services![/]",
-            seniorDeveloper, "Senior Developer", seniorDeveloperColor,
+            developer,
             Prompt: "Implement the relevant services"
         )
     },
@@ -205,7 +202,7 @@ async Task RunConcept(string conceptName)
         {
             foreach (var concept in conceptRequest.InputConcepts)
             {
-                conceptRequest.Conversation.AppendSystemMessage($"{conceptName}: {conceptResponses![concept]}");
+                conceptRequest.Persona.Conversation.AppendSystemMessage($"{conceptName}: {conceptResponses![concept]}");
             }
         }
 
@@ -223,17 +220,17 @@ async Task RunConcept(string conceptName)
                     instructions = Interpolate(instructions, interpolationKeys);
                 }
 
-                conceptRequest.Conversation.AppendSystemMessage(instructions);
+                conceptRequest.Persona.Conversation.AppendSystemMessage(instructions);
             }
         }
 
 
         // The conversation should be properly prepped, let's just run the iteration
-        var conceptResponse = await Iteration(conceptRequest.Conversation,
+        var conceptResponse = await Iteration(conceptRequest.Persona.Conversation,
             conceptName,
             conceptRequest.Prompt,
-            conceptRequest.ActorName,
-            conceptRequest.ActorColor);
+            conceptRequest.Persona.Name,
+            conceptRequest.Persona.Color);
 
         conceptResponses!.Add(conceptName, conceptResponse);
     }
@@ -336,7 +333,7 @@ async Task<string> Iteration(Conversation conversation,
     string conceptName,
     string? prompt,
     string actorName,
-    string color,
+    Color color,
     string? happyQuestion = null,
     string? reminder = null)
 {
@@ -358,12 +355,12 @@ async Task<string> Iteration(Conversation conversation,
 
     do
     {
-        AnsiConsole.MarkupLine($"[{color}]<{actorName}>[/]");
+        AnsiConsole.MarkupInterpolated($"[{color}]<{actorName}>[/]");
         AnsiConsole.WriteLine();
 
         if (returnString != string.Empty)
         {
-            Console.WriteLine(returnString);
+            AnsiConsole.MarkupLineInterpolated($"[{color}]{returnString}[/]");
         }
         else
         {
@@ -374,7 +371,7 @@ async Task<string> Iteration(Conversation conversation,
                 {
                     if (segment != null)
                     {
-                        Console.Write(segment);
+                        AnsiConsole.MarkupInterpolated($"[{color}]{segment}[/]");
                         returnString += segment;
                     }
                 }
@@ -409,12 +406,15 @@ async Task<string> Iteration(Conversation conversation,
     return returnString;
 }
 
+record Persona(
+    Conversation Conversation,
+    string Name,
+    Color Color);
+
 record ConceptRequest(
     string ConceptName,
     string Introduction,
-    Conversation Conversation,
-    string ActorName,
-    string ActorColor,
+    Persona Persona,
     List<string>? Instructions = null,
     List<string>? InputConcepts = null,
     string? Prompt = null);
