@@ -1,0 +1,36 @@
+OCore solves dependencies between services using constructor injection where appropriate.
+
+```csharp
+
+public class MyService : IService, Service
+{
+	private readonly IServiceDependency _serviceDependency;
+	private readonly IOtherServiceDependency _otherServiceDependency;
+
+	public MyService(IServiceDependency serviceDependency, IOtherServiceDependency otherServiceDependency)
+	{
+		_serviceDependency = serviceDependency;
+		_otherServiceDependency = otherServiceDependency;
+	}
+
+	// ...
+}
+```
+
+To communicate with a DataEntity from a Service, you do not use repositories, you create the DataEntity based on its ID, consider this method:
+
+```csharp
+	public Task CallDataEntity(string entityId)
+	{
+
+		// Fetch a reference to the data entity
+		var dataEntity = GrainFactory.GetGrain<IMyDataEntity>(entityId);
+
+		// Call a method on the data entity
+		var entityState = await dataEntity.
+	}
+
+```
+
+If you want to communicate with a DataEntity from another DataEntity, you simply use `Get<IMyDataEntity>(id)`. The ID is optional,
+and if it is left out, it will get a DataEntity of a different type with the same ID.

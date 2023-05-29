@@ -204,7 +204,11 @@ async Task NewBusinessCase()
     AnsiConsole.MarkupLine("[green]Let's talk to some developers![/]");
 
     seniorDeveloper = Service.CreateConversation();
+    var ocoreCommunicationInstructions = GetInstructions("OCore.Communication");
+    var interpolatedCommunicationInstructions = Interpolate(ocoreCommunicationInstructions, null);
+
     Service.AddSystemMessage(seniorDeveloper, interpolatedDeveloperIntructions);
+    Service.AddSystemMessage(seniorDeveloper, interpolatedCommunicationInstructions);
 
     var serviceCodeInstructions = GetInstructions("OCore.Service.Code");
     var interpolatedServiceCodeInstructions = Interpolate(serviceCodeInstructions, ("Title", title!));
