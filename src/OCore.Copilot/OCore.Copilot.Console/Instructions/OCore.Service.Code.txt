@@ -3,7 +3,7 @@ Services in OCore as defined as follows using C#:
 ```csharp
 using OCore.Services;
 
-namespace {Title}.Services; // Always prefer declaring a namespace like this!! 
+namespace AppName.Services; // Always prefer declaring a namespace like this!! 
 
 [Service("ServiceName")]
 public interface IServiceName : IService

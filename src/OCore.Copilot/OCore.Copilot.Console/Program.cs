@@ -1,6 +1,7 @@
 ﻿using Spectre.Console;
 using OCore.Copilot.Core;
 using OpenAI_API.Chat;
+using System.ComponentModel.DataAnnotations;
 
 var configFile = File.ReadAllLines("openapi.txtconfig");
 
@@ -19,56 +20,232 @@ AnsiConsole.Write(
         .Color(Color.Fuchsia));
 AnsiConsole.WriteLine();
 
-const string newBusinessCase = "New business case";
-const string iterateOnRepo = "Iterate on existing repo";
-
-var operationSelected = false;
-var programmingLanguage = "CSharp";
+// Some long-lived values
 string? title = null;
-
-Conversation? businessPerson = null;
-string businessPersonColor = "yellow";
-Conversation? teamLead = null;
-string teamLeadColor = "gold1";
-Conversation? seniorDeveloper = null;
-string seniorDeveloperColor = "aquamarine3";
+string? description = null;
 
 Service.SetupApi(apiKey);
 
-while (operationSelected == false)
-{
-    var operation = AnsiConsole.Prompt(
-        new SelectionPrompt<string>()
-            .Title("[bold green]What are we doing?[/]")
-            .AddChoices(new[]
-            {
-                newBusinessCase,
-                iterateOnRepo
-            }
-        ));
+Conversation stakeholder = Service.CreateConversation();
+const string stakeholderColor = "yellow";
+Conversation teamLead = Service.CreateConversation();
+const string teamLeadColor = "gold1";
+Conversation seniorDeveloper = Service.CreateConversation();
+const string seniorDeveloperColor = "aquamarine3";
 
-    switch (operation)
+// Workflow
+var workflow = new List<string>
+{
+    "Business Case",
+    "Domain Actors",
+    "Domain Concepts",
+    "System Description",
+    "UseCases",
+    "TeamLead Reaction",
+    "Task List",
+    "Events",
+    "Services",
+    "DataEntities",
+    "Developer Reactions",
+    "Service Implementation",
+};
+
+// Store the output from an iteration over a concept so it can be propagated
+var conceptResponses = new Dictionary<string, string>();
+
+// Given a concept, define the values and relevant actors
+var conceptRequests = new Dictionary<string, ConceptRequest>
+{
     {
-        case newBusinessCase:
-            operationSelected = true;
-            await NewBusinessCase();
-            break;
-        case iterateOnRepo:
-            operationSelected = true;
-            break;
-        default:
-            AnsiConsole.MarkupLine("[bold red]Strange, my friend, but you seem to have picked an invalid option[/]");
-            break;
+        "Business Case",
+        new ConceptRequest(
+            "Business Case",
+            "[green]Let's talk to our business person![/]",
+            stakeholder, "Stakeholder", stakeholderColor,
+            new List<string> {"BusinessCase" },
+            null,
+            "I want you to help elaborate on the business case and give me an elevator pitch.") },
+    {
+        "Domain Actors",
+        new ConceptRequest("Domain Actors",
+            "Great! Let's indentify some [green]domain actors[/]",
+            stakeholder, "Stakeholder", stakeholderColor,
+            new List<string> { "DomainActors" }          
+        )
+    },
+    {
+        "Domain Concepts",
+        new ConceptRequest("Domain Concepts",
+            "Great! Let's indentify some [green]domain concepts[/]",
+            stakeholder, "Stakeholder", stakeholderColor,
+            new List<string> { "DomainConcepts" }            
+        )
+    },
+    {
+        "System Description",
+        new ConceptRequest("System Description",
+            "Great! Let's try to describe the system [green]in a developer friendly way[/]",
+            stakeholder, "Stakeholder", stakeholderColor,
+            new List<string> { "SystemDescription" }            
+        )
+    },        
+    {
+        "UseCases",
+        new ConceptRequest("UseCases",
+            "Great! Let's try to [green]describe some use-cases[/] so we can get started on development",
+            stakeholder, "Stakeholder", stakeholderColor,
+            new List<string> { "UseCases" }      
+        )
+    }, 
+    {
+        "TeamLead Reaction",
+        new ConceptRequest("TeamLead Reaction",
+            "[green]Let's get the team lead involved in the process![/]",
+            teamLead, "Team Lead", teamLeadColor,
+            new List<string> { "Developer", "TeamLead" },
+            new List<string> { "Business Case", "Domain Actors", "Domain Concepts", "System Description", "UseCases" }
+        )
+    },
+    {
+        "Task List",
+        new ConceptRequest("Task List",
+            "[green]Create some concrete tasks that a developer can get started on.[/]",
+            teamLead, "Team Lead", teamLeadColor,
+            new List<string> { "TaskCreation" }            
+        )
+    }, 
+    {
+        "Events",
+        new ConceptRequest("Events",
+            "[green]Can you identify events in the system?[/]",
+            teamLead, "Team Lead", teamLeadColor,
+            new List<string> { "Events" },
+            Prompt: "Identify the Events in the system"
+        )
+    },
+    {
+        "Services",
+        new ConceptRequest("Services",
+            "[green]Can you identify services in the system?[/]",
+            teamLead, "Team Lead", teamLeadColor,
+            new List<string> { "Services" },
+            Prompt: "Identify the Services in the system"
+        )
+    },
+    {
+        "DataEntities",
+        new ConceptRequest("DataEntities",
+            "[green]Can you identify data entities in the system?[/]",
+            teamLead, "Team Lead", teamLeadColor,
+            new List<string> { "DataEntities" },
+            Prompt: "Identify the DataEntities in the system"
+        )
+    },
+    {
+        "Developer Reactions",
+        new ConceptRequest("Developer Reactions",
+            "[green]Let's talk to some developers![/]",
+            seniorDeveloper, "Senior Developer", seniorDeveloperColor,
+            new List<string> { 
+                "Developer", 
+                "OCore.Communication", 
+                "OCore.Service.Code", 
+                "OCore.Event.Code",
+                "OCore.DataEntity.Code"
+            },
+            new List<string>
+            {
+                "Task List",
+                "Domain Actors",
+                "Domain Concepts",
+                "UseCases",
+                "Services",
+                "DataEntities",
+                "Events"
+            },
+            "Give me your initial reaction to these tasks, how they are defined and how comprehensible they are."
+        )
+    },
+        {
+        "Service Implementation",
+        new ConceptRequest("Service Implementation",
+            "[green]Let's try to implement some of the services![/]",
+            seniorDeveloper, "Senior Developer", seniorDeveloperColor,
+            Prompt: "Implement the relevant services"
+        )
+    },
+};
+
+// Given a concept, if appropriate, make a call to a func that indicates keys to be
+// interpolated
+var interpolationKeys = new Dictionary<string, Func<List<Tuple<string, string>>>>
+{
+    { "Business Case", () =>
+        {
+            return new List<Tuple<string, string>>{
+                Tuple.Create("Title", title!),
+                Tuple.Create("Description", description!)
+            };
+        }
+    }
+};
+
+// Let's just support new business cases for now
+await NewBusinessCase();
+
+// Execute necessary steps for a concept
+async Task RunConcept(string conceptName)
+{
+    if (conceptRequests!.TryGetValue(conceptName, out var conceptRequest))
+    {
+        AnsiConsole.MarkupLine(conceptRequest.Introduction);
+
+        // Prep the conversation, first the previous concepts
+        if (conceptRequest.InputConcepts != null)
+        {
+            foreach (var concept in conceptRequest.InputConcepts)
+            {
+                conceptRequest.Conversation.AppendSystemMessage($"{conceptName}: {conceptResponses![concept]}");
+            }
+        }
+
+        // Prep the conversation, then the current instructions
+        if (conceptRequest.Instructions != null)
+        {
+            foreach (var instructionsName in conceptRequest.Instructions)
+            {
+                var instructions = GetInstructions(instructionsName);
+
+                // Interpolate the instructions if necessary
+                if (interpolationKeys!.TryGetValue(conceptName, out var interpolationKeyFunc))
+                {
+                    var interpolationKeys = interpolationKeyFunc();
+                    instructions = Interpolate(instructions, interpolationKeys);
+                }
+
+                conceptRequest.Conversation.AppendSystemMessage(instructions);
+            }
+        }
+
+
+        // The conversation should be properly prepped, let's just run the iteration
+        var conceptResponse = await Iteration(conceptRequest.Conversation,
+            conceptName,
+            conceptRequest.Prompt,
+            conceptRequest.ActorName,
+            conceptRequest.ActorColor);
+
+        conceptResponses!.Add(conceptName, conceptResponse);
+    }
+    else
+    {
+        throw new Exception("Undefined concept, there seems to be something wrong");
     }
 }
-
-
 
 async Task NewBusinessCase()
 {
     var correctTandB = false;
-
-    string? description = null;
 
     while (correctTandB == false)
     {
@@ -111,70 +288,15 @@ async Task NewBusinessCase()
         }
     }
 
-    if (Directory.Exists(title) == false)
+    if (Directory.Exists(Path.Combine("artifacts", title!)) == false)
     {
-        Directory.CreateDirectory(title!);
+        Directory.CreateDirectory(Path.Combine("artifacts", title!));
     }
 
-    var businessCaseInstructions = GetInstructions("BusinessCase");
-    var interpolatedBusinessCaseInstructions = Interpolate(businessCaseInstructions,
-        ("Title", title!),
-        ("Description", description!));
-
-
-    businessPerson = Service.CreateConversation();
-
-    AnsiConsole.MarkupLine("[green]Let's talk to our business person![/]");
-
-    Service.AddSystemMessage(businessPerson, interpolatedBusinessCaseInstructions);
-
-    var businessCase = await CreateBusinessCase(businessPerson, "I want you to help elaborate on the business case and give me an elevator pitch.");
-
-    var domainActorInstructions = GetInstructions("DomainActors");
-
-    AnsiConsole.MarkupLine("Great! Let's indentify some [green]domain actors[/]");
-    var interpolatedDomainActorInstructions = Interpolate(domainActorInstructions, null);
-    var actors = await IdentifyActors(businessPerson, interpolatedDomainActorInstructions);
-
-    var domainConceptInstructions = GetInstructions("DomainConcepts");
-    AnsiConsole.MarkupLine("Great! Let's indentify some [green]domain concepts[/]");
-    var interpolatedDomainConceptInstructions = Interpolate(domainConceptInstructions, null);
-    var concepts = await IdentifyConcepts(businessPerson, interpolatedDomainConceptInstructions);
-
-    var systemDescriptionInstructions = GetInstructions("SystemDescription");
-    AnsiConsole.MarkupLine("Great! Let's try to [green]describe the system[/] in a developer friendly way");
-    var interpolatedSystemDescriptionInstructions = Interpolate(systemDescriptionInstructions, null);
-    var systemDescription = await IdentifySystemDescription(businessPerson, interpolatedSystemDescriptionInstructions);
-
-    var useCasesInstructions = GetInstructions("UseCases");
-    AnsiConsole.MarkupLine("Great! Let's try to [green]describe some use-cases[/] so we can get started on development");
-    var interpolatedUseCasesInstructions = Interpolate(useCasesInstructions, null);
-    var useCases = await IdentifyUseCases(businessPerson, interpolatedUseCasesInstructions);
-
-    AnsiConsole.MarkupLine("[green]Let's get the team lead involved in the process![/]");
-
-    teamLead = Service.CreateConversation();
-    var teamLeadInstructions = GetInstructions("TeamLead");
-    var developerInstructions = GetInstructions("Developer");
-    var interpolatedTeamLeadInstructions = Interpolate(teamLeadInstructions, null);
-    var interpolatedDeveloperIntructions = Interpolate(developerInstructions, null);
-
-    Service.AddSystemMessage(teamLead, interpolatedTeamLeadInstructions);
-    Service.AddSystemMessage(teamLead, interpolatedDeveloperIntructions);
-    //Service.AddSystemMessage(teamLead, $"The business case is: {businessCase}");
-    Service.AddSystemMessage(teamLead, $"The domain actors are: {actors}");
-    Service.AddSystemMessage(teamLead, $"The domain concepts are: {concepts}");
-    Service.AddSystemMessage(teamLead, $"The system description is: {systemDescription}");
-    Service.AddSystemMessage(teamLead, $"The use cases are: {useCases}");
-
-
-    var initialTeamLeadReaction = await GetInitialTeamLeadReaction(teamLead, "Can you give me your initial reactions on this?");
-
-    AnsiConsole.MarkupLine("[green]Create some concrete tasks that a developer can get started on.[/]");
-
-    var taskInstructions = GetInstructions("TaskCreation");
-    var interpolatedTaskInstructions = Interpolate(taskInstructions, null);
-    var taskList = await TaskCreation(teamLead, interpolatedTaskInstructions);
+    foreach (var conceptName in workflow)
+    {
+        await RunConcept(conceptName);
+    }
 
     // This negotiation-part between stakeholder and team lead is currently commented out
     // as it quickly pushes against the token limit for gpt-3-turbo
@@ -187,46 +309,13 @@ async Task NewBusinessCase()
     //var interpolatedResolvedTasklist = Interpolate(resolvedTaskListInstructions, ("ResolvedUncertainties", resolvedUncertainties));
 
     //var addedAnswers = await Iteration(teamLead, interpolatedResolvedTasklist, "Team Lead", teamLeadColor);
+    
 
-    AnsiConsole.MarkupLine("[green]Can you identify events in the system?[/]");
-    var eventInstructions = GetInstructions("Events");
-    var interpolatedEventInstructions = Interpolate(eventInstructions, null);
-    var eventList = await Iteration(teamLead, "events", interpolatedEventInstructions, "Team Lead", teamLeadColor);
-
-    AnsiConsole.MarkupLine("[green]Can you identify services in the system?[/]");
-    var serviceInstructions = GetInstructions("Services");
-    var interpolatedServiceInstructions = Interpolate(serviceInstructions, null);
-    var serviceList = await Iteration(teamLead, "services", interpolatedServiceInstructions, "Team Lead", teamLeadColor);
-
-    AnsiConsole.MarkupLine("[green]Can you identify data entities in the system?[/]");
-    var dataEntityInstructions = GetInstructions("DataEntities");
-    var interpolatedDataEntityInstructions = Interpolate(dataEntityInstructions, null);
-    var dataEntityList = await Iteration(teamLead, "dataentities", interpolatedDataEntityInstructions, "Team Lead", teamLeadColor);
-
-    AnsiConsole.MarkupLine("[green]Let's talk to some developers![/]");
-
-    seniorDeveloper = Service.CreateConversation();
-    var ocoreCommunicationInstructions = GetInstructions("OCore.Communication");
-    var interpolatedCommunicationInstructions = Interpolate(ocoreCommunicationInstructions, null);
-
-    Service.AddSystemMessage(seniorDeveloper, interpolatedDeveloperIntructions);
-    Service.AddSystemMessage(seniorDeveloper, interpolatedCommunicationInstructions);
-
-    var serviceCodeInstructions = GetInstructions("OCore.Service.Code");
-    var interpolatedServiceCodeInstructions = Interpolate(serviceCodeInstructions, ("Title", title!));
-    Service.AddSystemMessage(seniorDeveloper, $"These are the Services: {serviceList}");
-    Service.AddSystemMessage(seniorDeveloper, interpolatedServiceCodeInstructions);
-    var code = await Iteration(seniorDeveloper, "code", "Write the code for the identified services in C#", "Senior Developer", seniorDeveloperColor);
-
+    
 
 }
 
-async Task<string> TaskCreation(Conversation conversation, string query)
-{
-    return await Iteration(conversation, "tasks", query, "Team Lead", teamLeadColor);
-}
-
-string Interpolate(string businessCaseInstructions, params (string, string)[]? substitutes)
+string Interpolate(string businessCaseInstructions, List<Tuple<string, string>> substitutes)
 {
     if (substitutes == null) return businessCaseInstructions;
     foreach (var substitute in substitutes)
@@ -236,41 +325,41 @@ string Interpolate(string businessCaseInstructions, params (string, string)[]? s
     return businessCaseInstructions;
 }
 
-string GetInstructions(string instructionName)
+string GetInstructions(string instructionsName)
 {
-#if false
-    var instructionLines = File.ReadAllLines(Path.Combine("Instructions", $"{instructionName}.txt"));
-    var instructions = string.Join(' ', instructionLines);
-#endif
-    var instructions = File.ReadAllText(Path.Combine("Instructions", $"{instructionName}.txt"));
+    var instructions = File.ReadAllText(Path.Combine("Instructions", $"{instructionsName}.txt"));
     return instructions;
 }
 
 
 async Task<string> Iteration(Conversation conversation,
     string conceptName,
-    string initialPrompt,
+    string? prompt,
     string actorName,
     string color,
     string? happyQuestion = null,
     string? reminder = null)
 {
-    var path = Path.Combine(title!, $"{conceptName}.txt");
+    var path = Path.Combine("artifacts", title!, $"{conceptName}.txt");
     string returnString = string.Empty;
     if (File.Exists(path))
     {
-        returnString = File.ReadAllText(path);        
+        returnString = File.ReadAllText(path);
     }
 
     var happy = false;
     if (returnString == string.Empty)
     {
-        Service.AddInput(conversation, initialPrompt);
+        if (string.IsNullOrEmpty(prompt) == false)
+        {
+            Service.AddInput(conversation, prompt);
+        }
     }
 
     do
     {
-        AnsiConsole.Markup($"[{color}]<{actorName}>:[/] ");
+        AnsiConsole.MarkupLine($"[{color}]<{actorName}>[/]");
+        AnsiConsole.WriteLine();
 
         if (returnString != string.Empty)
         {
@@ -305,12 +394,12 @@ async Task<string> Iteration(Conversation conversation,
         happy = AnsiConsole.Confirm(happyQuestion ?? "Are you happy?");
         if (happy == false)
         {
-            var prompt = AnsiConsole.Ask<string>("Please elaborate: ");
+            var feedback = AnsiConsole.Ask<string>("Please elaborate: ");
             if (reminder != null)
             {
                 Service.AddInput(conversation, reminder);
             }
-            Service.AddInput(conversation, prompt);
+            Service.AddInput(conversation, feedback);
             returnString = string.Empty;
         }
     } while (happy == false);
@@ -320,33 +409,12 @@ async Task<string> Iteration(Conversation conversation,
     return returnString;
 }
 
-
-async Task<string> GetInitialTeamLeadReaction(Conversation conversation, string query)
-{
-    return await Iteration(conversation, "leadreaction", query, "Team Lead", teamLeadColor);
-}
-
-async Task<string> CreateBusinessCase(Conversation businessPerson, string interpolatedBusinessCaseInstructions)
-{
-    return await Iteration(businessPerson, "businesscase", interpolatedBusinessCaseInstructions, "BusinessPerson", businessPersonColor, "Are you happy with the business case description?");
-}
-
-async Task<string> IdentifyActors(Conversation businessPerson, string interpolatedDomainActors)
-{
-    return await Iteration(businessPerson, "actors", interpolatedDomainActors, "BusinessPerson", businessPersonColor, "Are you happy with the identified actors?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
-}
-
-async Task<string> IdentifyConcepts(Conversation businessPerson, string interpolatedDomainConcepts)
-{
-    return await Iteration(businessPerson, "domainconcepts", interpolatedDomainConcepts, "BusinessPerson", businessPersonColor, "Are you happy with the identified concepts?", "Remember to only output these in the previously described format, just the list, no chatter outside the list.");
-}
-
-async Task<string> IdentifySystemDescription(Conversation businessPerson, string interpolatedSystemDescription)
-{
-    return await Iteration(businessPerson, "systemdescription", interpolatedSystemDescription, "BusinessPerson", businessPersonColor, "Are you happy with the proposed system description?");
-}
-
-async Task<string> IdentifyUseCases(Conversation businessPerson, string interpolatedUseCases)
-{
-    return await Iteration(businessPerson, "usecases", interpolatedUseCases, "BusinessPerson", businessPersonColor, "Are you happy with these usecases?");
-}
+record ConceptRequest(
+    string ConceptName,
+    string Introduction,
+    Conversation Conversation,
+    string ActorName,
+    string ActorColor,
+    List<string>? Instructions = null,
+    List<string>? InputConcepts = null,
+    string? Prompt = null);
