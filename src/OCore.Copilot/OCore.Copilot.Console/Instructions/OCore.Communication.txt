@@ -20,6 +20,8 @@ public class MyService : IService, Service
 To communicate with a DataEntity from a Service, you do not use repositories, you create the DataEntity based on its ID, consider this method:
 
 ```csharp
+public class MyService : IService, Service
+{
 	public Task CallDataEntity(string entityId)
 	{
 
@@ -29,8 +31,10 @@ To communicate with a DataEntity from a Service, you do not use repositories, yo
 		// Call a method on the data entity
 		var entityState = await dataEntity.
 	}
-
+}
 ```
 
 If you want to communicate with a DataEntity from another DataEntity, you simply use `Get<IMyDataEntity>(id)`. The ID is optional,
 and if it is left out, it will get a DataEntity of a different type with the same ID.
+
+You do not need to return `bool` as an indication of whether or not a call succeeds, as OCore supports exception handling.

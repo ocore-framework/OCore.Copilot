@@ -99,8 +99,9 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         new ConceptRequest("TeamLead Reaction",
             "[green]Let's get the team lead involved in the process![/]",
             teamLead,
-            new List<string> { "Developer", "TeamLead" },
-            new List<string> { "Business Case", "Domain Actors", "Domain Concepts", "System Description", "UseCases" }
+            Instructions: new List<string> { "Developer", "TeamLead" },
+            Concepts: new List<string> { "Business Case", "Domain Actors", "Domain Concepts", "System Description", "UseCases" },
+            Prompt: "Can you give me your gut reaction to this? Just a couple of sentences."
         )
     },
     {
@@ -108,7 +109,8 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         new ConceptRequest("Task List",
             "[green]Create some concrete tasks that a developer can get started on.[/]",
             teamLead,
-            new List<string> { "TaskCreation" }            
+            new List<string> { "TaskCreation" },
+            Prompt: "Can you give me 3-5 concrete tasks?"
         )
     }, 
     {
@@ -198,9 +200,9 @@ async Task RunConcept(string conceptName)
         AnsiConsole.MarkupLine(conceptRequest.Introduction);
 
         // Prep the conversation, first the previous concepts
-        if (conceptRequest.InputConcepts != null)
+        if (conceptRequest.Concepts != null)
         {
-            foreach (var concept in conceptRequest.InputConcepts)
+            foreach (var concept in conceptRequest.Concepts)
             {
                 conceptRequest.Persona.Conversation.AppendSystemMessage($"{conceptName}: {conceptResponses![concept]}");
             }
@@ -416,5 +418,5 @@ record ConceptRequest(
     string Introduction,
     Persona Persona,
     List<string>? Instructions = null,
-    List<string>? InputConcepts = null,
+    List<string>? Concepts = null,
     string? Prompt = null);
