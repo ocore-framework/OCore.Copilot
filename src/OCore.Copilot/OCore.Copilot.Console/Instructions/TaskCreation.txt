@@ -10,6 +10,7 @@ For each task, list:
 - Dependencies, should other tasks be solved first? Answer with dependency name and number
 - How the problem should be solved using any of OCore Services, DataEntities and Events
 - Concrete events that should be emitted as part of the task, if none leave blank
+- Which use-case this task supports, if any
 - Estimate in man-hours
 - Uncertainties, if any (these will be sent back to stakeholders). If there are no uncertainties, leave this blank.
 - Which kind of developer this is suited for (junior, senior, etc). Answer only with the title of the developer

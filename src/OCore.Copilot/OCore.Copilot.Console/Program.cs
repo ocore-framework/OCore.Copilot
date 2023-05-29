@@ -1,5 +1,4 @@
 ﻿using Spectre.Console;
-using Spectre.Console.Rendering;
 using OCore.Copilot.Core;
 using OpenAI_API.Chat;
 
@@ -17,7 +16,7 @@ if (apiKey == null)
 AnsiConsole.Write(
     new FigletText("OCore Copilot")
         .Centered()
-        .Color(Spectre.Console.Color.Fuchsia));
+        .Color(Color.Fuchsia));
 AnsiConsole.WriteLine();
 
 const string newBusinessCase = "New business case";
@@ -176,6 +175,9 @@ async Task NewBusinessCase()
     var taskInstructions = GetInstructions("TaskCreation");
     var interpolatedTaskInstructions = Interpolate(taskInstructions, null);
     var taskList = await TaskCreation(teamLead, interpolatedTaskInstructions);
+
+    // This negotiation-part between stakeholder and team lead is currently commented out
+    // as it quickly pushes against the token limit for gpt-3-turbo
 
     //var uncertaintyInstructions = GetInstructions("StakeholderUncertainties");
     //var interpolatedUncertainties = Interpolate(uncertaintyInstructions, ("TaskList", taskList));
