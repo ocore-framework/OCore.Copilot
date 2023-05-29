@@ -16,7 +16,7 @@ The OCore framework uses three main concepts:
   DataEntities automatically implement their own internal and external APIs with
   full CRUD functionality.
   
-- Events: An OCore Event is a message that is sent using the EventAggregator. 
+- Events: An OCore Event is a message that is sent using the `EventAggregator`. 
   Events are named in the past tense. For example, `UserCreated` or `UserUpdated`.
 
 OCore makes communicating with the database directly often unncessesary, persistence

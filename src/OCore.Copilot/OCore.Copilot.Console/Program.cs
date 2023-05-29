@@ -152,7 +152,7 @@ async Task NewBusinessCase()
     var interpolatedUseCasesInstructions = Interpolate(useCasesInstructions, null);
     var useCases = await IdentifyUseCases(businessPerson, interpolatedUseCasesInstructions);
 
-    AnsiConsole.MarkupLine("[green]Let's get some developers into the process![/]");
+    AnsiConsole.MarkupLine("[green]Let's get the team lead involved in the process![/]");
 
     teamLead = Service.CreateConversation();
     var teamLeadInstructions = GetInstructions("TeamLead");
@@ -186,17 +186,22 @@ async Task NewBusinessCase()
 
     //var addedAnswers = await Iteration(teamLead, interpolatedResolvedTasklist, "Team Lead", teamLeadColor);
 
+    AnsiConsole.MarkupLine("[green]Can you identify events in the system?[/]");
     var eventInstructions = GetInstructions("Events");
     var interpolatedEventInstructions = Interpolate(eventInstructions, null);
     var eventList = await Iteration(teamLead, "events", interpolatedEventInstructions, "Team Lead", teamLeadColor);
 
+    AnsiConsole.MarkupLine("[green]Can you identify services in the system?[/]");
     var serviceInstructions = GetInstructions("Services");
     var interpolatedServiceInstructions = Interpolate(serviceInstructions, null);
     var serviceList = await Iteration(teamLead, "services", interpolatedServiceInstructions, "Team Lead", teamLeadColor);
 
+    AnsiConsole.MarkupLine("[green]Can you identify data entities in the system?[/]");
     var dataEntityInstructions = GetInstructions("DataEntities");
     var interpolatedDataEntityInstructions = Interpolate(dataEntityInstructions, null);
     var dataEntityList = await Iteration(teamLead, "dataentities", interpolatedDataEntityInstructions, "Team Lead", teamLeadColor);
+
+    AnsiConsole.MarkupLine("[green]Let's talk to some developers![/]");
 
     seniorDeveloper = Service.CreateConversation();
     Service.AddSystemMessage(seniorDeveloper, interpolatedDeveloperIntructions);
