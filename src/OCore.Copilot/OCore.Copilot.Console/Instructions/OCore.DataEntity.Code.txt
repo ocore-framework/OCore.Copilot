@@ -3,9 +3,86 @@ that have an identity.
 
 DataEntity ID's are always strings.
 
-The code for a `DataEntity` is as follows:
+The code for a `DataEntity` interface/abstraction is as follows:
 
 ```csharp
+/// <summary>
+/// The state for the Person data entity. This is the class that will be
+/// used for persisting state related to the data entity.
+/// </summary>
+[GenerateSerializer]
+public class PersonData 
+{
+    /// <summary>
+    /// The id of the entity.
+    /// </summary>
+    [Id(0)] public string Id { get; set; }
+    
+    /// <summary>
+    /// The name of the entity.
+    /// </summary>
+    [Id(1)] public string Name { get; set; }
+    
+    /// <summary>
+    /// The age of the entity.
+    /// </summary>
+    [Id(2)] public int Age { get; set; }
+}
 
-
+/// <summary>
+/// The person interface.
+/// </summary>
+[DataEntity("Person"")]
+public interface IPersonDataEntity : IDataEntity<EntityData>
+{
+    /// <summary>
+    /// Summarize the person in the form "Name is Age years old."
+    /// </summary>
+    Task Summarize();
+}
 ```
+
+The code for the implementation of a `DataEntity` is as follows:
+
+```csharp
+public class PersonDataEntity : DataEntity<PersonData>, IPersonDataEntity
+{
+
+    /// <inheritdoc />
+    public async Task Summarize()
+    {
+        await Console.Out.WriteLineAsync($"{Data.Name} is {Data.Age} years old.");
+    }
+}
+```
+
+If a DataEntity needs to talk to another DataEntity, it can use the `Get<T>` method to get the
+other DataEntity. If the parameter to the `Get<T>` method is omitted, it will default to the
+same identity as the calling DataEntity.
+
+Example of a DataEntity calling another DataEntity with the same identity:
+
+```csharp
+public async Task CallOut() {
+    var other = await Get<IOtherDataEntity>();
+    await other.MakeCall();
+}
+```
+
+Example of a DataEntity calling another DataEntity with a different identity:
+
+```csharp
+public async Task CallOut() {
+    var other = await Get<IOtherDataEntity>("other");
+    await other.MakeCall();
+}
+```
+
+The purpose of calling another DataEntity with the same identity is to allow for
+splitting up a logical DataEntity into multiple physical DataEntities. This is
+useful for separating concerns and for scaling.
+
+Parameters and operation-names are just examples, these need to follow
+the requirements.
+
+Ids should default to being strings, not Guids. But they can be Guids stored as strings.

@@ -35,15 +35,17 @@ namespace OCore.Copilot.Core
         public static Conversation CreateConversation(string? model = null)
         {
             CheckInit();
-            //return api!.Chat.CreateConversation(new ChatRequest
-            //{
-            //    Model = "gpt-4"
-            //});
             if (model == null)
             {
                 return api!.Chat.CreateConversation();
             }
-            else throw new Exception("Currently, only the default model is supported");
+            else
+            {
+                return api!.Chat.CreateConversation(new ChatRequest
+                {
+                    Model = model,
+                });
+            }
         }
 
         public static void AddSystemMessage(Conversation conversation, string message)

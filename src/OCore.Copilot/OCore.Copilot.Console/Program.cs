@@ -10,7 +10,8 @@ var organization = configFile[1].Split(' ')[1].Trim();
 
 if (apiKey == null)
 {
-    AnsiConsole.MarkupLine("[bold red]The configuration is missing an API key. Check the example.openapi.txtconfig-file[/]");
+    AnsiConsole.MarkupLine(
+        "[bold red]The configuration is missing an API key. Check the example.openapi.txtconfig-file[/]");
     return;
 }
 
@@ -27,8 +28,8 @@ string? description = null;
 Service.SetupApi(apiKey);
 
 var stakeholder = new Persona(Service.CreateConversation(), "Stakeholder", Color.Yellow);
-var teamLead = new Persona(Service.CreateConversation(), "Team Lead", Color.Gold1);
-var developer = new Persona(Service.CreateConversation(), "Developer", Color.Aquamarine3);
+var teamLead = new Persona(Service.CreateConversation("gpt-3.5-turbo-16k"), "Team Lead", Color.Gold1);
+var developer = new Persona(Service.CreateConversation("gpt-3.5-turbo-16k"), "Developer", Color.Aquamarine3);
 
 // Workflow
 var workflow = new List<string>
@@ -59,23 +60,24 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
             "Business Case",
             "[green]Let's talk to our business person![/]",
             stakeholder,
-            new List<string> {"BusinessCase" },
+            new List<string> { "BusinessCase" },
             null,
-            "I want you to help elaborate on the business case and give me an elevator pitch.") },
+            "I want you to help elaborate on the business case and give me an elevator pitch.")
+    },
     {
         "Domain Actors",
         new ConceptRequest("Domain Actors",
-            "Great! Let's indentify some [green]domain actors[/]",
+            "Great! Let's identify some [green]domain actors[/]",
             stakeholder,
-            new List<string> { "DomainActors" }          
+            new List<string> { "DomainActors" }
         )
     },
     {
         "Domain Concepts",
         new ConceptRequest("Domain Concepts",
-            "Great! Let's indentify some [green]domain concepts[/]",
+            "Great! Let's identify some [green]domain concepts[/]",
             stakeholder,
-            new List<string> { "DomainConcepts" }            
+            new List<string> { "DomainConcepts" }
         )
     },
     {
@@ -83,24 +85,31 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         new ConceptRequest("System Description",
             "Great! Let's try to describe the system [green]in a developer friendly way[/]",
             stakeholder,
-            new List<string> { "SystemDescription" }            
+            new List<string> { "SystemDescription" }
         )
-    },        
+    },
     {
         "UseCases",
         new ConceptRequest("UseCases",
             "Great! Let's try to [green]describe some use-cases[/] so we can get started on development",
             stakeholder,
-            new List<string> { "UseCases" }      
+            new List<string> { "UseCases" }
         )
-    }, 
+    },
     {
         "TeamLead Reaction",
         new ConceptRequest("TeamLead Reaction",
             "[green]Let's get the team lead involved in the process![/]",
             teamLead,
             Instructions: new List<string> { "Developer", "TeamLead" },
-            Concepts: new List<string> { "Business Case", "Domain Actors", "Domain Concepts", "System Description", "UseCases" },
+            Concepts: new List<string>
+            {
+                "Business Case",
+                "Domain Actors",
+                "Domain Concepts",
+                "System Description",
+                "UseCases"
+            },
             Prompt: "Can you give me your gut reaction to this? Just a couple of sentences."
         )
     },
@@ -112,7 +121,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
             new List<string> { "TaskCreation" },
             Prompt: "Can you give me 3-5 concrete tasks?"
         )
-    }, 
+    },
     {
         "Events",
         new ConceptRequest("Events",
@@ -145,12 +154,13 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         new ConceptRequest("Developer Reactions",
             "[green]Let's talk to some developers![/]",
             developer,
-            new List<string> { 
-                "Developer", 
-                "OCore.Communication", 
-                "OCore.Service.Code", 
+            new List<string>
+            {
+                "Developer",
+                "OCore.Communication",
+                "OCore.Service.Code",
+                "OCore.DataEntity.Code",
                 "OCore.Event.Code",
-                "OCore.DataEntity.Code"
             },
             new List<string>
             {
@@ -165,12 +175,12 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
             "Give me your initial reaction to these tasks, how they are defined and how comprehensible they are."
         )
     },
-        {
-        "Service Implementation",
-        new ConceptRequest("Service Implementation",
-            "[green]Let's try to implement some of the services![/]",
+    {
+        "Service Interface Implementation",
+        new ConceptRequest("Service Interface Implementation",
+            "[green]Let's try to define some of the service interfaces![/]",
             developer,
-            Prompt: "Implement the relevant services"
+            Prompt: "Fully implement the interfaces for the services"
         )
     },
 };
@@ -179,9 +189,11 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
 // interpolated
 var interpolationKeys = new Dictionary<string, Func<List<Tuple<string, string>>>>
 {
-    { "Business Case", () =>
+    {
+        "Business Case", () =>
         {
-            return new List<Tuple<string, string>>{
+            return new List<Tuple<string, string>>
+            {
                 Tuple.Create("Title", title!),
                 Tuple.Create("Description", description!)
             };
@@ -238,7 +250,7 @@ async Task RunConcept(string conceptName)
     }
     else
     {
-        throw new Exception("Undefined concept, there seems to be something wrong");
+        throw new Exception($"Undefined concept: '{conceptName}', there seems to be something wrong");
     }
 }
 
@@ -260,11 +272,14 @@ async Task NewBusinessCase()
 
         if (description == null)
         {
-            description = AnsiConsole.Ask<string>("Can you give an overall description of your [green]business case[/]?");
+            description =
+                AnsiConsole.Ask<string>("Can you give an overall description of your [green]business case[/]?");
         }
         else
         {
-            description = AnsiConsole.Ask<string>("Can you give an overall description of your [green]business case[/]?", description);
+            description =
+                AnsiConsole.Ask<string>("Can you give an overall description of your [green]business case[/]?",
+                    description);
         }
 
         var topTable = new Table();
@@ -308,10 +323,6 @@ async Task NewBusinessCase()
     //var interpolatedResolvedTasklist = Interpolate(resolvedTaskListInstructions, ("ResolvedUncertainties", resolvedUncertainties));
 
     //var addedAnswers = await Iteration(teamLead, interpolatedResolvedTasklist, "Team Lead", teamLeadColor);
-    
-
-    
-
 }
 
 string Interpolate(string businessCaseInstructions, List<Tuple<string, string>> substitutes)
@@ -321,6 +332,7 @@ string Interpolate(string businessCaseInstructions, List<Tuple<string, string>> 
     {
         businessCaseInstructions = businessCaseInstructions.Replace($"{{{substitute.Item1}}}", substitute.Item2);
     }
+
     return businessCaseInstructions;
 }
 
@@ -366,7 +378,6 @@ async Task<string> Iteration(Conversation conversation,
         }
         else
         {
-
             try
             {
                 await foreach (var segment in Service.GetStream(conversation))
@@ -398,6 +409,7 @@ async Task<string> Iteration(Conversation conversation,
             {
                 Service.AddInput(conversation, reminder);
             }
+
             Service.AddInput(conversation, feedback);
             returnString = string.Empty;
         }

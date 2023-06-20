@@ -1,26 +1,35 @@
-Services in OCore as defined as follows using C#:
+Services in OCore as defined as follows using C#. Here is example code for the abstraction/interface-part:
 
 ```csharp
 using OCore.Services;
 
-namespace AppName.Services; // Always prefer declaring a namespace like this!! 
+namespace AppName.Services; 
 
+/// <summary>
+/// This is a description of the service.
+/// </summary>
 [Service("ServiceName")]
 public interface IServiceName : IService
 {
+    /// <summary>
+    /// This is a description of the operation
+    /// </summary>
 	Task<T> Operation(string parameter1, int parameter2);
 }
+```
 
-// Add public XML-comment here
+This is the implementation-part:
+
+```csharp
+/// <inhericdoc />
 public class ServiceName : Service, IServiceName
 {
-	// Add public XML-comment here
+	/// <inhericdoc />
 	public async Task<T> Operation(string parameter1, int parameter2) 
 	{
-		// Implement method as expected from description
+		// Implement method as expected from description in the requirements
 	}
 }
-
 ```
 
 Parameters and operation-names are just examples, these need to follow
