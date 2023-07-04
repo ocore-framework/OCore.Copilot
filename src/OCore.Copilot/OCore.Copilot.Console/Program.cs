@@ -1,12 +1,18 @@
 ﻿using Spectre.Console;
 using OCore.Copilot.Core;
 using OpenAI_API.Chat;
-using System.ComponentModel.DataAnnotations;
 
 var configFile = File.ReadAllLines("openapi.txtconfig");
 
 var apiKey = configFile[0].Split(' ')[1].Trim();
 var organization = configFile[1].Split(' ')[1].Trim();
+
+var cleanRun = true;
+
+if (cleanRun == true)
+{
+    Directory.Delete("artifacts", true);
+}
 
 if (apiKey == null)
 {
@@ -27,8 +33,8 @@ string? description = null;
 
 Service.SetupApi(apiKey);
 
-var stakeholder = new Persona(Service.CreateConversation(), "Stakeholder", Color.Yellow);
-var teamLead = new Persona(Service.CreateConversation("gpt-3.5-turbo-16k"), "Team Lead", Color.Gold1);
+var stakeholder = new Persona(Service.CreateConversation("gpt-3.5-turbo-16k"), "Stakeholder", Color.Yellow);
+var teamLead = new Persona(Service.CreateConversation("gpt-3.5-turbo-16k"), "Team Lead", Color.Pink3);
 var developer = new Persona(Service.CreateConversation("gpt-3.5-turbo-16k"), "Developer", Color.Aquamarine3);
 
 // Workflow
@@ -45,7 +51,7 @@ var workflow = new List<string>
     "Services",
     "DataEntities",
     "Developer Reactions",
-    "Service Implementation",
+    "Service Interface Implementation",
 };
 
 // Store the output from an iteration over a concept so it can be propagated
@@ -158,7 +164,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
             {
                 "Developer",
                 "OCore.Communication",
-                "OCore.Service.Code",
+                "OCore.ServiceInterface.Code",
                 "OCore.DataEntity.Code",
                 "OCore.Event.Code",
             },
@@ -180,7 +186,7 @@ var conceptRequests = new Dictionary<string, ConceptRequest>
         new ConceptRequest("Service Interface Implementation",
             "[green]Let's try to define some of the service interfaces![/]",
             developer,
-            Prompt: "Fully implement the interfaces for the services"
+            Prompt: "Fully implement the interfaces for all of the identified the services. Remember to exchange `AppName` for the actual application name."
         )
     },
 };

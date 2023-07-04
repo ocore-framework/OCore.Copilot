@@ -37,7 +37,7 @@
     <None Update="Instructions\OCore.Event.Code.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Instructions\OCore.Service.Code.txt">
+    <None Update="Instructions\OCore.ServiceInterface.Code.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Instructions\DataEntities.txt">
